@@ -2,6 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+from fuzzywuzzy import fuzz
 import ffmpeg
 
 load_dotenv()
@@ -14,21 +15,18 @@ async def on_ready():
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print('------')
 
-@bot.command()
-async def add(ctx, left: int, right: int):
-    """Adds two numbers together."""
-    await ctx.send(left + right)
-    return 
-
-@bot.command(name="start")
-async def start(ctx):
-    """Adds two numbers together."""
-    await ctx.send("Let's play the game 🎶")
-    return 
 
 @bot.command(name="song")
 async def song(ctx):
     """Provides a song snippet"""
+    if ctx.author.voice is None:
+        await ctx.send("You're not in a voice channel!")
+        return
+
+    ctx.voice_client.play(discord.FFmpegPCMAudio(source='indianajones.mp3'))
+
+@bot.command(name="start")
+async def start(ctx):
     if ctx.author.voice is None:
         await ctx.send("You're not in a voice channel!")
         return
@@ -39,10 +37,22 @@ async def song(ctx):
     else:
         await ctx.voice_client.move_to(voice_channel)
 
-    # Play the song snippet here (example with a local file)
-    ctx.voice_client.play(discord.FFmpegPCMAudio(source='indianajones.mp3'))
-
+    #joining the channel
+    await ctx.send("Let's play the game 🎶")
 
     return 
+
+
+@bot.command(name='guess')
+async def guess(ctx, *, guess: str):
+    correct_title = "Indiana Jones"  # The actual title of the song
+
+    similarity_score = fuzz.ratio(guess.lower(), correct_title.lower())
+
+    if similarity_score >= 70:  # You can adjust this threshold
+        await ctx.send(f"Correct! 🎉 You got {similarity_score}% of the title right.")
+    else:
+        await ctx.send(f"Sorry, that's not correct. 😢 You got {similarity_score}% of the title right.")
+
 
 bot.run(TOKEN)
